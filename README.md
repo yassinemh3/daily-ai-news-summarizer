@@ -19,6 +19,8 @@ Every day at 9 AM the workflow:
 
 RSS Feed → n8n → Gemini AI → Telegram Bot → Database Storage
 
+![Architecture](docs/architecture.png)
+
 ---
 
 ## 🛠 Tech Stack
@@ -29,6 +31,12 @@ RSS Feed → n8n → Gemini AI → Telegram Bot → Database Storage
 - RSS Feeds
 - Database (for summary storage)
 
+## 📲 Example Telegram Output
+
+Here’s how the daily digest looks in Telegram:
+
+![Telegram Digest Example](docs/telegram.png)
+
 ---
 
 ## ⚙️ Setup Instructions
@@ -36,7 +44,7 @@ RSS Feed → n8n → Gemini AI → Telegram Bot → Database Storage
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/daily-ai-news-summarizer.git
+git clone https://github.com/yassinemh3/daily-ai-news-summarizer.git
 ```
 ### 2️⃣ Import Workflow into n8n
 
