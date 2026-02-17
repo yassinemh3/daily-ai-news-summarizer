@@ -1,0 +1,451 @@
+{
+  "name": "Daily AI News Summarizer with Email and Telegram Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "3819c2dc-6fd9-4ca8-a7b1-4fb25b32756e",
+      "name": "Daily 9 AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        256,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "rss_url",
+              "value": "https://venturebeat.com/category/ai/feed/",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "telegram_chat_id",
+              "value": "<__PLACEHOLDER_VALUE__your-telegram-chat-id__>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9d51dd8e-8b39-43c0-a6fa-c7acb52bad8e",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Workflow Configuration').item.json.rss_url }}",
+        "options": {}
+      },
+      "id": "1b5f8419-b18e-456f-925b-23e8c14aef68",
+      "name": "Fetch AI News RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "maxItems": 5
+      },
+      "id": "e67a8885-ce26-4119-b70f-55f89954a8f2",
+      "name": "Top 5 Articles",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        928,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "d60d21c0-20e0-43b5-8649-5ae704601d88",
+      "name": "Combine Articles for AI",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Articles to summarize:\n{{ $json.data }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an AI news summarizer. You will receive the top 5 AI news articles from today. Your task is to:\n\n1. Create a professional summary of each article (2-3 sentences per article)\n"
+        }
+      },
+      "id": "9e492026-ab1f-4ef1-8e8f-465dd0ab9df8",
+      "name": "AI Summarizer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1376,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"professional_summary\": \"Professional summary of the top 5 AI news articles\"\n}"
+      },
+      "id": "8014b9f9-9141-4094-a984-dd0b1be660a7",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1520,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        608
+      ],
+      "id": "eae90fc6-62e1-46d6-b88c-ddd782cd7ca4",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "7BqSsEFUWkW54UM6",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "telegram_message",
+              "value": "=🤖 *Daily AI News Digest*\n_{{ $now.format('MMMM d, yyyy') }}_\n\n*Professional Summary:*\n{{ $json.output.professional_summary }}\n\n---\n\n🎈 *Explain Like I'm 12:*\n{{ $json.output.eli12_summary }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "chat_id",
+              "value": "={{ $('Workflow Configuration').item.json.telegram_chat_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ebc0b65f-173a-48b6-a913-75fdd89964d1",
+      "name": "Format Telegram Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1728,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "=935325689",
+        "text": "={{ $json.telegram_message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "116cd223-8d5b-4016-9292-ab9a486f0ccd",
+      "name": "Send Telegram Digest",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1952,
+        496
+      ],
+      "webhookId": "cfa65bd5-283c-4834-8653-6b990f1ba54e",
+      "credentials": {
+        "telegramApi": {
+          "id": "oAO0SYmXinzuhuIt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "date",
+              "value": "={{ $now.format('yyyy-MM-dd') }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "professional_summary",
+              "value": "={{ $('AI Summarizer').item.json.output.professional_summary }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "article_count",
+              "value": 5,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "91d20cc1-db6c-4a4f-9a31-28275264b805",
+      "name": "Prepare Summary for Storage",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "U8sG2N6BeXtCEfYc",
+          "mode": "list",
+          "cachedResultName": "News_Summary",
+          "cachedResultUrl": "/projects/9Uu52qLUvoBu7QQZ/datatables/U8sG2N6BeXtCEfYc"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "professional_summary",
+              "displayName": "professional_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "article_count",
+              "displayName": "article_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "optimizeBulk": false
+        }
+      },
+      "id": "e069b542-3adf-4a27-8ccb-f472bcca3461",
+      "name": "Store Daily Summary",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2464,
+        304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily 9 AM Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch AI News RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch AI News RSS": {
+      "main": [
+        [
+          {
+            "node": "Top 5 Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Top 5 Articles": {
+      "main": [
+        [
+          {
+            "node": "Combine Articles for AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Articles for AI": {
+      "main": [
+        [
+          {
+            "node": "AI Summarizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Summarizer",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Summarizer": {
+      "main": [
+        [
+          {
+            "node": "Format Telegram Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Summary for Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Summarizer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Summary for Storage": {
+      "main": [
+        [
+          {
+            "node": "Store Daily Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Daily Summary": {
+      "main": [
+        [
+          {
+            "node": "Format Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a963ffba-c00f-4405-a8d8-7e2eb31a5ad8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fd6386b64b5d27732da3f1001c2f18313582605ca83a8bb55f9c50a91e8988d9"
+  },
+  "id": "fz38bQcjioxZK1dq",
+  "tags": []
+}
